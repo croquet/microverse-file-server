@@ -1,0 +1,13 @@
+{
+  "name": "@croquet/microverse-file-server",
+  "version": "1.0.0",
+  "description": "A server to serve static files for microverse",
+  "bin": {
+    "file-server": "./file-server.js"
+  },
+  "author": "Croquet Corporation",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  }
+}
