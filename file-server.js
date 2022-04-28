@@ -54,6 +54,9 @@ function fileTypes(name) {
     if (name.endsWith(".pdf")) {
        return "application/pdf";
     }
+    if (name.endsWith(".wasm")) {
+       return "application/wasm";
+    }
     return "application/octet-stream";
 }
 
