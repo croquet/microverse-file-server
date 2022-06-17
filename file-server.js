@@ -9,7 +9,7 @@
  * and modified by Croquet Corporation
  */
 
-let port = 9684,
+let port = 9685,
     http = require('http'),
     urlParser = require('url'),
     fs = require('fs'),

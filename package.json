@@ -1,6 +1,6 @@
 {
   "name": "@croquet/microverse-file-server",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A server to serve static files for microverse",
   "bin": {
     "file-server": "./file-server.js"
