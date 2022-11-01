@@ -226,73 +226,62 @@ function handleRequest(request, response) {
 }
 
 function displayAddresses() {
-    // https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js
-    let nets = networkInterfaces();
-
-    let results = {};
-
-    for (let name of Object.keys(nets)) {
-        for (let net of nets[name]) {
-            let isV4 = net.family === (typeof net.family === "string" ? "IPv4" : 4);
-            if (!results[name]) {
-                results[name] = [];
-            }
-            results[name].push({isV4, address: net.address, internal: net.internal});
-        }
-    }
-
-    function isInternal(entries) {
-        for (let i = 0; i < entries.length; i++) {
-            let entry = entries[i];
-            if (entry.internal) {return true;}
-        }
-        return false;
-    }
-
-    function isPrivateAddress(address) {
+    function isLocalAddress(address) {
         let local_patterns = [
             // 10.0.0.0 - 10.255.255.255
-            /^(::ffff:)?10(?:\.\d{1,3}){3}$/,
+            /^10(?:\.\d{1,3}){3}$/,
             // 127.0.0.0 - 127.255.255.255
-            /^(::ffff:)?127(?:\.\d{1,3}){3}$/,
+            /^127(?:\.\d{1,3}){3}$/,
             // 169.254.1.0 - 169.254.254.255
-            /^(::f{4}:)?169\.254\.([1-9]|1?\d\d|2[0-4]\d|25[0-4])\.\d{1,3}$/,
+            /^169\.254\.([1-9]|1?\d\d|2[0-4]\d|25[0-4])\.\d{1,3}$/,
             // 172.16.0.0 - 172.31.255.255
-            /^(::ffff:)?(172\.1[6-9]|172\.2\d|172\.3[01])(?:\.\d{1,3}){2}$/,
+            /^(172\.1[6-9]|172\.2\d|172\.3[01])(?:\.\d{1,3}){2}$/,
             // 192.168.0.0 - 192.168.255.255
-            /^(::ffff:)?192\.168(?:\.\d{1,3}){2}$/,
+            /^192\.168(?:\.\d{1,3}){2}$/,
+            // fc00::/7
+            /^\[f[cd][\da-f]{2}(:?:[\da-f]{1,4}){1,7}\]$/,
+            // fe80::/10
+            // /^\[fe[89ab][\da-f](:?:[\da-f]{1,4}){1,7}\]$/, // unusable as URL
             // ::1
-            /^::1$/,
+            /^\[::1\]$/,
         ];
 
-        for (let i = 0; i < local_patterns.length; i++) {
-            if (local_patterns[i].test(address)) {return true;}
-        }
-        return false;
+        return local_patterns.some(pattern => pattern.test(address));
     }
 
-    function isPrivate(entries) {
-        for (let i = 0; i < entries.length; i++) {
-            let entry = entries[i];
-            if (isPrivateAddress(entry.address)) {return true;}
+
+    // https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js
+    let interfaces = networkInterfaces();
+
+    let results = [];
+
+    for (let nets of Object.values(interfaces)) {
+        for (let net of nets) {
+            let v4 = net.family === (typeof net.family === "string" ? "IPv4" : 4);
+            let address = v4 ? net.address : `[${net.address}]`;
+            let external = !net.internal;
+            let local = isLocalAddress(address);
+            if (local) {
+                results.push({v4, address, external});
+            }
         }
-        return false;
     }
+
+    results.sort((a, b) => {
+        if (a.external && !b.external) return -1;
+        if (!a.external && b.external) return 1;
+        if (a.v4 && !b.v4) return -1;
+        if (!a.v4 && b.v4) return 1;
+        return 0;
+    });
 
     let displayPort = (port === 80) ? "" : `:${port}`;
     console.log("Running at:");
-    for (let name of Object.keys(results)) {
-        let entries = results[name];
-        let internal = isInternal(entries);
-        let private = isPrivate(entries);
-        if (internal || private) {
-            entries.forEach((entry) => {
-                if (!entry.isV4) {return;}
-                console.log(`\thttp://${entry.address}${displayPort}`);
-            });
-        }
+    for (let {external, v4, address} of results) {
+        let displayExternal = external ? "Local net" : "Host only";
+        let displayV4 = v4 ? "IPv4" : "IPv6";
+        console.log(`\t(${displayExternal} ${displayV4}) http://${address}${displayPort}`);
     }
-    console.log(`\thttp://[::1]${displayPort}`);
 }
 
 http.createServer(handleRequest).listen(port);
