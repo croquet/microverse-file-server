@@ -226,61 +226,37 @@ function handleRequest(request, response) {
 }
 
 function displayAddresses() {
-    function isLocalAddress(address) {
-        let local_patterns = [
-            // 10.0.0.0 - 10.255.255.255
-            /^10(?:\.\d{1,3}){3}$/,
-            // 127.0.0.0 - 127.255.255.255
-            /^127(?:\.\d{1,3}){3}$/,
-            // 169.254.1.0 - 169.254.254.255
-            /^169\.254\.([1-9]|1?\d\d|2[0-4]\d|25[0-4])\.\d{1,3}$/,
-            // 172.16.0.0 - 172.31.255.255
-            /^(172\.1[6-9]|172\.2\d|172\.3[01])(?:\.\d{1,3}){2}$/,
-            // 192.168.0.0 - 192.168.255.255
-            /^192\.168(?:\.\d{1,3}){2}$/,
-            // fc00::/7
-            /^\[f[cd][\da-f]{2}(:?:[\da-f]{1,4}){1,7}\]$/,
-            // fe80::/10
-            // /^\[fe[89ab][\da-f](:?:[\da-f]{1,4}){1,7}\]$/, // unusable as URL
-            // ::1
-            /^\[::1\]$/,
-        ];
-
-        return local_patterns.some(pattern => pattern.test(address));
-    }
-
-
-    // https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js
     let interfaces = networkInterfaces();
 
     let results = [];
 
-    for (let nets of Object.values(interfaces)) {
-        for (let net of nets) {
-            let v4 = net.family === (typeof net.family === "string" ? "IPv4" : 4);
-            let address = v4 ? net.address : `[${net.address}]`;
-            let external = !net.internal;
-            let local = isLocalAddress(address);
-            if (local) {
-                results.push({v4, address, external});
-            }
+    // we want at most one IPv4 and one IPv6 address per interface
+    // but need to exclude link-local addresses
+    for (let interface of Object.values(interfaces)) {
+        let families = {};
+        for (let { family, internal, address }  of interface) {
+            if (typeof family === "number") family = `IPv${family}`;
+            if (family in families) continue;
+            results.push({family, address, internal});
+            families[family] = true;
         }
     }
 
+    // list external IPv4 first
     results.sort((a, b) => {
-        if (a.external && !b.external) return -1;
-        if (!a.external && b.external) return 1;
-        if (a.v4 && !b.v4) return -1;
-        if (!a.v4 && b.v4) return 1;
+        if (a.internal < b.internal) return -1;
+        if (a.internal > b.internal) return 1;
+        if (a.family < b.family) return -1;
+        if (a.family > b.family) return 1;
         return 0;
     });
 
     let displayPort = (port === 80) ? "" : `:${port}`;
     console.log("Running at:");
-    for (let {external, v4, address} of results) {
-        let displayExternal = external ? "Local net" : "Host only";
-        let displayV4 = v4 ? "IPv4" : "IPv6";
-        console.log(`\t(${displayExternal} ${displayV4}) http://${address}${displayPort}`);
+    for (let {internal, family, address} of results) {
+        let label = internal ? "Host only" :  "Network";
+        let displayAddress = family === "IPv6" ? `[${address}]` : address;
+        console.log(`\t(${label} ${family}) http://${displayAddress}${displayPort}`);
     }
 }
 
