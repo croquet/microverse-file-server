@@ -229,6 +229,7 @@ function displayAddresses() {
     let interfaces = networkInterfaces();
 
     let results = [];
+    let order = {};
 
     // we want at most one IPv4 and one IPv6 address per interface
     // but need to exclude link-local addresses
@@ -242,12 +243,15 @@ function displayAddresses() {
             results.push({name, family, address, internal});
             families[family] = true;
         }
+        order[name] = results.length;
     }
 
     // list external IPv4 first
     results.sort((a, b) => {
         if (a.internal < b.internal) return -1;
         if (a.internal > b.internal) return 1;
+        if (order[a.name] < order[b.name]) return -1;
+        if (order[a.name] > order[b.name]) return 1;
         if (a.family < b.family) return -1;
         if (a.family > b.family) return 1;
         return 0;
