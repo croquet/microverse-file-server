@@ -232,14 +232,14 @@ function displayAddresses() {
 
     // we want at most one IPv4 and one IPv6 address per interface
     // but need to exclude link-local addresses
-    for (let interface of Object.values(interfaces)) {
+    for (let [name, interface] of Object.entries(interfaces)) {
         let families = {};
-        for (let { family, internal, address }  of interface) {
+        for (let { family, internal, address } of interface) {
             if (typeof family === "number") family = `IPv${family}`;
             if (family in families) continue;
             let linkLocal = /^fe[89ab]/.test(address);
             if (linkLocal) continue;
-            results.push({family, address, internal});
+            results.push({name, family, address, internal});
             families[family] = true;
         }
     }
@@ -255,10 +255,10 @@ function displayAddresses() {
 
     let displayPort = (port === 80) ? "" : `:${port}`;
     console.log("Running at:");
-    for (let {internal, family, address} of results) {
+    for (let {name, internal, family, address} of results) {
         let label = internal ? "Host only" :  "Network";
         let displayAddress = family === "IPv6" ? `[${address}]` : address;
-        console.log(`\t(${label} ${family}) http://${displayAddress}${displayPort}`);
+        console.log(`\t(${label} ${family} "${name}") http://${displayAddress}${displayPort}`);
     }
 }
 
