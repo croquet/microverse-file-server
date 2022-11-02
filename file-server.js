@@ -237,6 +237,8 @@ function displayAddresses() {
         for (let { family, internal, address }  of interface) {
             if (typeof family === "number") family = `IPv${family}`;
             if (family in families) continue;
+            let linkLocal = /^fe[89ab]/.test(address);
+            if (linkLocal) continue;
             results.push({family, address, internal});
             families[family] = true;
         }
