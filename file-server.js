@@ -228,8 +228,8 @@ function handleRequest(request, response) {
     let pathname = decodeURIComponent(urlObject.pathname);
     let method = request.method;
 
-    if (method === 'GET') {
     console.log(`[${(new Date()).toUTCString()}] ${label}"${method} ${pathname}"`);
+    if (method === 'GET' || method === 'HEAD') {
         return get(request, response, pathname);
     }
     /*
