@@ -10,14 +10,13 @@
  */
 
 let port = 9685,
+    rootDir = process.cwd(),
     cors = true,
     label = "",
     http = require('http'),
     urlParser = require('url'),
     fs = require('fs'),
-    path = require('path'),
-    currentDir = process.cwd(),
-    dns = require("dns");
+    path = require('path');
 
 let {networkInterfaces} = require("os");
 
@@ -33,7 +32,8 @@ ind = process.argv.indexOf("--dir");
 if (ind >= 0) {
     let maybeDir = process.argv[ind + 1];
     if (maybeDir) {
-        currentDir = maybeDir;
+        rootDir = maybeDir;
+    }
 }
 
 ind = process.argv.indexOf("--label");
@@ -98,7 +98,7 @@ function header(type) {
 
 function get(request, response, pathname) {
     if (pathname.endsWith('/')) {pathname += 'index.html';}
-    let filePath = path.join(currentDir, pathname);
+    let filePath = path.join(rootDir, pathname);
     fs.stat(filePath, (err, stats) => {
         if (err) {
             response.writeHead(404, {});
@@ -135,7 +135,7 @@ function get(request, response, pathname) {
                 files.unshift('.', '..');
                 files.forEach((item) => {
                     let urlpath = pathname + item,
-                        itemStats = fs.statSync(currentDir + urlpath);
+                        itemStats = fs.statSync(rootDir + urlpath);
                     if (itemStats.isDirectory()) {
                         urlpath += '/';
                         item += '/';
@@ -151,7 +151,7 @@ function get(request, response, pathname) {
 }
 
 function put(request, response, pathname) {
-    let filePath = path.join(currentDir, pathname);
+    let filePath = path.join(rootDir, pathname);
     let buf;
     request.on('data', (chunk) => {
         try {
@@ -276,7 +276,6 @@ function displayAddresses() {
     });
 
     let displayPort = (port === 80) ? "" : `:${port}`;
-    console.log("Running at:");
     for (let {name, internal, family, address} of results) {
         let net = internal ? "Host only" :  "Network";
         let displayAddress = family === "IPv6" ? `[${address}]` : address;
