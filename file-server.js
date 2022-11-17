@@ -10,12 +10,13 @@
  */
 
 let port = 9685,
+    rootDir = process.cwd(),
+    cors = true,
+    label = "",
     http = require('http'),
     urlParser = require('url'),
     fs = require('fs'),
-    path = require('path'),
-    currentDir = process.cwd(),
-    dns = require("dns");
+    path = require('path');
 
 let {networkInterfaces} = require("os");
 
@@ -31,8 +32,21 @@ ind = process.argv.indexOf("--dir");
 if (ind >= 0) {
     let maybeDir = process.argv[ind + 1];
     if (maybeDir) {
-        currentDir = maybeDir;
+        rootDir = maybeDir;
     }
+}
+
+ind = process.argv.indexOf("--label");
+if (ind >= 0) {
+    let maybeLabel = process.argv[ind + 1];
+    if (maybeLabel) {
+        label = `${maybeLabel}: `;
+    }
+}
+
+ind = process.argv.indexOf("--no-cors");
+if (ind >= 0) {
+    cors = false;
 }
 
 function fileTypes(name) {
@@ -64,23 +78,27 @@ function fileTypes(name) {
 }
 
 function header(type) {
-    let base = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, PUT, PROPFIND",
-        "Access-Control-Allow-Headers": "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range",
-        "Access-Control-Max-Age": "0",
-        "Cache-Control": "no-cache"
+    let headers = {
+        "Cache-Control": "no-cache",
     };
 
-    if (type) {
-        base["Content-Type"] = type;
+    if (cors) {
+        headers["Access-Control-Allow-Origin"] = "*";
+        headers["Access-Control-Allow-Methods"] = "GET,PUT,PROPFIND";
+        headers["Access-Control-Allow-Headers"] = "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range";
+        headers["Access-Control-Max-Age"] = "0";
     }
-    return base;
+
+    if (type) {
+        headers["Content-Type"] = type;
+    }
+
+    return headers;
 }
 
 function get(request, response, pathname) {
     if (pathname.endsWith('/')) {pathname += 'index.html';}
-    let filePath = path.join(currentDir, pathname);
+    let filePath = path.join(rootDir, pathname);
     fs.stat(filePath, (err, stats) => {
         if (err) {
             response.writeHead(404, {});
@@ -117,7 +135,7 @@ function get(request, response, pathname) {
                 files.unshift('.', '..');
                 files.forEach((item) => {
                     let urlpath = pathname + item,
-                        itemStats = fs.statSync(currentDir + urlpath);
+                        itemStats = fs.statSync(rootDir + urlpath);
                     if (itemStats.isDirectory()) {
                         urlpath += '/';
                         item += '/';
@@ -133,7 +151,7 @@ function get(request, response, pathname) {
 }
 
 function put(request, response, pathname) {
-    let filePath = path.join(currentDir, pathname);
+    let filePath = path.join(rootDir, pathname);
     let buf;
     request.on('data', (chunk) => {
         try {
@@ -210,8 +228,8 @@ function handleRequest(request, response) {
     let pathname = decodeURIComponent(urlObject.pathname);
     let method = request.method;
 
-    console.log(`[${(new Date()).toUTCString()}] "${method} ${pathname}"`);
-    if (method === 'GET') {
+    console.log(`[${(new Date()).toUTCString()}] ${label}"${method} ${pathname}"`);
+    if (method === 'GET' || method === 'HEAD') {
         return get(request, response, pathname);
     }
     /*
@@ -258,17 +276,15 @@ function displayAddresses() {
     });
 
     let displayPort = (port === 80) ? "" : `:${port}`;
-    console.log("Running at:");
     for (let {name, internal, family, address} of results) {
-        let label = internal ? "Host only" :  "Network";
+        let net = internal ? "Host only" :  "Network";
         let displayAddress = family === "IPv6" ? `[${address}]` : address;
-        console.log(`\t(${label} ${family} "${name}") http://${displayAddress}${displayPort}`);
+        console.log(`${label}(${net} ${family} "${name}") http://${displayAddress}${displayPort}`);
     }
 }
 
 http.createServer(handleRequest).listen(port);
 
-console.log('The croquet file server server has started...');
-console.log('Base directory at ' + currentDir);
+console.log(`${label}serving ${rootDir}`);
 
 displayAddresses();
