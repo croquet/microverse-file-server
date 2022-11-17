@@ -10,6 +10,7 @@
  */
 
 let port = 9685,
+    cors = true,
     http = require('http'),
     urlParser = require('url'),
     fs = require('fs'),
@@ -33,6 +34,11 @@ if (ind >= 0) {
     if (maybeDir) {
         currentDir = maybeDir;
     }
+}
+
+ind = process.argv.indexOf("--no-cors");
+if (ind >= 0) {
+    cors = false;
 }
 
 function fileTypes(name) {
@@ -64,18 +70,22 @@ function fileTypes(name) {
 }
 
 function header(type) {
-    let base = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, PUT, PROPFIND",
-        "Access-Control-Allow-Headers": "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range",
-        "Access-Control-Max-Age": "0",
-        "Cache-Control": "no-cache"
+    let headers = {
+        "Cache-Control": "no-cache",
     };
 
-    if (type) {
-        base["Content-Type"] = type;
+    if (cors) {
+        headers["Access-Control-Allow-Origin"] = "*";
+        headers["Access-Control-Allow-Methods"] = "GET,PUT,PROPFIND";
+        headers["Access-Control-Allow-Headers"] = "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range";
+        headers["Access-Control-Max-Age"] = "0";
     }
-    return base;
+
+    if (type) {
+        headers["Content-Type"] = type;
+    }
+
+    return headers;
 }
 
 function get(request, response, pathname) {
