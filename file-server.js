@@ -11,6 +11,7 @@
 
 let port = 9685,
     cors = true,
+    label = "",
     http = require('http'),
     urlParser = require('url'),
     fs = require('fs'),
@@ -33,6 +34,13 @@ if (ind >= 0) {
     let maybeDir = process.argv[ind + 1];
     if (maybeDir) {
         currentDir = maybeDir;
+}
+
+ind = process.argv.indexOf("--label");
+if (ind >= 0) {
+    let maybeLabel = process.argv[ind + 1];
+    if (maybeLabel) {
+        label = `${maybeLabel}: `;
     }
 }
 
@@ -220,8 +228,8 @@ function handleRequest(request, response) {
     let pathname = decodeURIComponent(urlObject.pathname);
     let method = request.method;
 
-    console.log(`[${(new Date()).toUTCString()}] "${method} ${pathname}"`);
     if (method === 'GET') {
+    console.log(`[${(new Date()).toUTCString()}] ${label}"${method} ${pathname}"`);
         return get(request, response, pathname);
     }
     /*
@@ -270,15 +278,14 @@ function displayAddresses() {
     let displayPort = (port === 80) ? "" : `:${port}`;
     console.log("Running at:");
     for (let {name, internal, family, address} of results) {
-        let label = internal ? "Host only" :  "Network";
+        let net = internal ? "Host only" :  "Network";
         let displayAddress = family === "IPv6" ? `[${address}]` : address;
-        console.log(`\t(${label} ${family} "${name}") http://${displayAddress}${displayPort}`);
+        console.log(`${label}(${net} ${family} "${name}") http://${displayAddress}${displayPort}`);
     }
 }
 
 http.createServer(handleRequest).listen(port);
 
-console.log('The croquet file server server has started...');
-console.log('Base directory at ' + currentDir);
+console.log(`${label}serving ${rootDir}`);
 
 displayAddresses();
