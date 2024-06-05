@@ -51,28 +51,28 @@ if (ind >= 0) {
 
 function fileTypes(name) {
     if (name.endsWith(".mjs")) {
-       return "application/javascript";
+        return "application/javascript";
     }
     if (name.endsWith(".js")) {
-       return "application/javascript";
+        return "application/javascript";
     }
     if (name.endsWith(".css")) {
-       return "text/css";
+        return "text/css";
     }
     if (name.endsWith(".png")) {
-       return "image/png";
+        return "image/png";
     }
     if (name.endsWith(".svg")) {
-       return "image/svg+xml";
+        return "image/svg+xml";
     }
     if (name.endsWith(".html")) {
-       return "text/html";
+        return "text/html";
     }
     if (name.endsWith(".pdf")) {
-       return "application/pdf";
+        return "application/pdf";
     }
     if (name.endsWith(".wasm")) {
-       return "application/wasm";
+        return "application/wasm";
     }
     return "application/octet-stream";
 }
@@ -227,6 +227,14 @@ function handleRequest(request, response) {
     let urlObject = urlParser.parse(request.url, true);
     let pathname = decodeURIComponent(urlObject.pathname);
     let method = request.method;
+
+    let filePath = path.join(currentDir, pathname);
+    let normalized = path.dirname(path.normalize(filePath));
+    if (normalized.slice(0, currentDir.length) !== currentDir) {
+        response.writeHead(403, {});
+        response.end();
+        return;
+    }
 
     console.log(`[${(new Date()).toUTCString()}] ${label}"${method} ${pathname}"`);
     if (method === 'GET' || method === 'HEAD') {
