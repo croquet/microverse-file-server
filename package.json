@@ -3,13 +3,13 @@
     "version": "1.0.8",
     "description": "A server to serve static files for microverse",
     "bin": {
-        "file-server": "./file-server.js"
+        "file-server": "file-server.js"
     },
     "author": "Croquet Corporation",
     "license": "Apache-2.0",
     "repository": {
         "type": "git",
-        "url": "github:croquet/microverse-file-server"
+        "url": "git+https://github.com/croquet/microverse-file-server.git"
     },
     "bugs": "https://github.com/croquet/microverse/issues",
     "publishConfig": {
@@ -28,4 +28,3 @@
         "online"
     ]
 }
-
