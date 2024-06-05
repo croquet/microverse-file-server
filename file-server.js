@@ -232,9 +232,9 @@ function handleRequest(request, response) {
         pathname += "index.html";
     }
 
-    let filePath = path.join(currentDir, pathname);
+    let filePath = path.join(rootDir, pathname);
     let normalized = path.dirname(path.normalize(filePath));
-    if (normalized.slice(0, currentDir.length) !== currentDir) {
+    if (normalized.slice(0, rootDir.length) !== rootDir) {
         response.writeHead(403, {});
         response.end();
         return;
